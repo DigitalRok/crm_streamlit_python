@@ -1,14 +1,28 @@
 # utils.py
-import streamlit as st
 from pathlib import Path
+import streamlit as st
 
-def add_sidebar_logo(path: str = "assets/logo_control360T.png"):
-    """Muestra el logo en el sidebar (parte inferior)."""
-    if Path(path).exists():
-        st.sidebar.markdown("---")
-        st.sidebar.image(path, use_container_width=True)
-    else:
-        # Evita romper la app si el archivo no está
-        st.sidebar.markdown("---")
-        st.sidebar.caption("⚠️ Logo no encontrado")
+def add_sidebar_logo():
+    """
+    Intenta mostrar un logo en el sidebar.
+    Si no existe o hay error, NO rompe la app (muestra un texto).
+    """
+    try:
+        base = Path(__file__).resolve().parent
+        candidates = [
+            base / "assets" / "logo.png",
+            base / "logo.png",
+            base.parent / "assets" / "logo.png",
+            Path("assets/logo.png"),
+            Path("logo.png"),
+        ]
+        for p in candidates:
+            if p.exists():
+                st.sidebar.image(str(p), use_container_width=True)
+                return
+    except Exception:
+        pass
+
+    # Fallback seguro
+    st.sidebar.markdown("### Control 360°")
 

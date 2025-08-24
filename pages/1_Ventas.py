@@ -3,13 +3,16 @@ import streamlit as st
 from db import get_engine
 from sqlalchemy import text
 import pandas as pd
-from utils import add_sidebar_logo   # 👈 importa el helper del logo
+from utils import add_sidebar_logo   # helper del logo
 
 # ---------------- Configuración ----------------
 st.set_page_config(page_title="Ventas", page_icon="🧾", layout="wide")
 
-# 👇 logo en el **sidebar** (igual que en Inicio)
-add_sidebar_logo()
+# 👇 logo en el sidebar (tolerante a errores/archivo faltante)
+try:
+    add_sidebar_logo()
+except Exception:
+    st.sidebar.markdown("### Control 360°")
 
 # --- Título de la página ---
 st.title("🧾 Ventas")
@@ -219,7 +222,7 @@ if submitted:
                         disp=int(st.session_state["venta_dispositivo_id"]),
                         precio=float(st.session_state["venta_precio"]),
                         adelanto=float(st.session_state["venta_adelanto"]),
-                        plan=int(st.session_state["venta_plan_id"]),  # ← nunca None
+                        plan=int(st.session_state["venta_plan_id"]),  # nunca None
                         cuotas=int(st.session_state["venta_cant_cuotas"]),
                         tasa=float(st.session_state["venta_tasa_nominal"]),
                         cft=float(st.session_state["venta_cft"]),
@@ -260,6 +263,8 @@ try:
         st.info("No hay ventas aún.")
 except Exception as e:
     st.error(f"Error listando ventas: {e}")
+
+
 
 
 
