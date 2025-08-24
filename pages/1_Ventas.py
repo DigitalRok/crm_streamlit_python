@@ -73,13 +73,18 @@ try:
         """)).mappings().all()
     planes = [(f"{r['nombre']}", r["plan_id"]) for r in rows]
 except Exception:
-    planes = []   # sin cartel molesto
+    planes = []   # si la tabla no existe o falla la consulta
 
 # Avisos si faltan catálogos
 if not dispositivos:
     st.warning("No hay dispositivos cargados todavía. Cargá productos en 📦 *Productos*.")
 if not clientes:
     st.warning("No hay clientes cargados todavía. Cargá clientes en 👤 *Clientes*.")
+
+# Si no hay planes, detenemos (plan_id es NOT NULL en ventas)
+if not planes:
+    st.error("No hay planes configurados. Creá al menos uno en la tabla public.planes.")
+    st.stop()
 
 st.markdown("### Seleccionar datos base")
 
@@ -118,19 +123,16 @@ with colB:
     else:
         st.selectbox("Dispositivo", disp_lbls, disabled=True)
 
-# Plan (opcional)
-plan_lbls = [p[0] for p in planes] if planes else ["—"]
-if planes:
-    idx_plan = 0
-    if st.session_state["venta_plan_id"] is not None:
-        for i, (_, pid) in enumerate(planes):
-            if pid == st.session_state["venta_plan_id"]:
-                idx_plan = i
-                break
-    plan_sel = st.selectbox("Plan", plan_lbls, index=idx_plan, key="venta_plan_sel")
-    st.session_state["venta_plan_id"] = planes[plan_lbls.index(plan_sel)][1]
-else:
-    st.selectbox("Plan", plan_lbls, disabled=True)
+# Plan (obligatorio)
+plan_lbls = [p[0] for p in planes]
+idx_plan = 0
+if st.session_state["venta_plan_id"] is not None:
+    for i, (_, pid) in enumerate(planes):
+        if pid == st.session_state["venta_plan_id"]:
+            idx_plan = i
+            break
+plan_sel = st.selectbox("Plan", plan_lbls, index=idx_plan, key="venta_plan_sel")
+st.session_state["venta_plan_id"] = planes[plan_lbls.index(plan_sel)][1]
 
 st.markdown("---")
 
@@ -199,6 +201,8 @@ if submitted:
         st.error("Seleccioná un cliente.")
     elif not st.session_state["venta_dispositivo_id"]:
         st.error("Seleccioná un dispositivo.")
+    elif st.session_state["venta_plan_id"] is None:
+        st.error("Seleccioná un plan.")
     else:
         try:
             with eng.begin() as conn:
@@ -215,7 +219,7 @@ if submitted:
                         disp=int(st.session_state["venta_dispositivo_id"]),
                         precio=float(st.session_state["venta_precio"]),
                         adelanto=float(st.session_state["venta_adelanto"]),
-                        plan=int(st.session_state["venta_plan_id"]) if st.session_state["venta_plan_id"] else None,
+                        plan=int(st.session_state["venta_plan_id"]),  # ← nunca None
                         cuotas=int(st.session_state["venta_cant_cuotas"]),
                         tasa=float(st.session_state["venta_tasa_nominal"]),
                         cft=float(st.session_state["venta_cft"]),

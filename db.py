@@ -1,31 +1,18 @@
+# db.py
 import os
-from sqlalchemy import create_engine, text
-from sqlalchemy.engine import Engine
-from dotenv import load_dotenv
+from sqlalchemy import create_engine
 
-load_dotenv()
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres@localhost:5432/crm_celulares")
+# Intenta leer de variable de entorno; si no, de Streamlit secrets; si no, localhost
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    try:
+        import streamlit as st  # disponible en Streamlit Cloud
+        DATABASE_URL = st.secrets.get("DATABASE_URL")
+    except Exception:
+        DATABASE_URL = None
 
-_engine: Engine | None = None
+DATABASE_URL = DATABASE_URL or "postgresql://postgres@localhost:5432/crm_celulares"
 
-def get_engine() -> Engine:
-    global _engine
-    if _engine is None:
-        _engine = create_engine(DATABASE_URL, pool_pre_ping=True)
-    return _engine
-
-def query(sql: str, params: dict | None = None):
-    eng = get_engine()
-    with eng.connect() as conn:
-        res = conn.execute(text(sql), params or {})
-        try:
-            rows = res.mappings().all()
-            return rows
-        except Exception:
-            return []
-
-def execute(sql: str, params: dict | None = None):
-    eng = get_engine()
-    with eng.begin() as conn:
-        res = conn.execute(text(sql), params or {})
-        return res.rowcount
+def get_engine():
+    # sslmode lo toma de la URL (?sslmode=require)
+    return create_engine(DATABASE_URL, pool_pre_ping=True)
